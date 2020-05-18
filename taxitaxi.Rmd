@@ -9,6 +9,21 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r cleaningdata}
+library(tidyverse)
+url <- "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2018-10.csv"
+taxi_tab <- read_csv(url)
+```
+
+```{r sampling}
+
+taxi_tab <- taxi_tab %>%
+  sample_n(2000000) %>%
+  select(VendorID, tpep_pickup_datetime, tpep_dropoff_datetime, passenger_count, trip_distance, fare_amount, tip_amount, tolls_amount, PULocationID, DOLocationID)
+taxi_tab
+
+```
+
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
