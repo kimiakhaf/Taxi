@@ -10,6 +10,9 @@ hello how are you jajja
 
 Hypothesis testing(day vs tipping):
 
+Linear regression Model, We are trying to figure out the relationship between Day of the week and the Tip amount.For the linear regression model to actually be usable the mean should be very zero (or very close). In our case the mean is an extremely small value that it holds true.
+null hypothesis: there is no relationship between them. Alternative hypothesis, is there is a relationship between tip amount and day. If the value of the intercept <0.05  it rejects the null hypothesis. If the value of p is greater > 0.05 it does not reject the null hypothesis, meaning that there is no relationship. Even though the p-value is less than 0.05 and the mean of the residuals is close to 0. through the graph and collected data, I do not see a linear regression relationship between these two variables. So I dont feel comfortable to use the Linear regression model because some of the assumptions are not met. 
+
 Question 1:
 
 Is there a general trend (e.g., increasing or decreasing) for Is there a relationship between weekend/weekday and tipping habits? Is this trend linear? 
@@ -22,9 +25,7 @@ Question 3: What would a violin plot of residuals from the linear model in Quest
 
 Question 4: According to the assumptions of the linear regression model, what should that violin plot look like?
 
-Question 5:
 
-Linear regression Model, We are trying to figure out the relationship between Day of the week and the Tip amount.For the linear regression model to actually be usable the mean should be very zero (or very close). In our case the mean is an extremely small value that it holds true.
 
 
 ```{r setup, include=FALSE}
@@ -81,12 +82,16 @@ taxi_tab
   
   augment_lm <- get_resid %>%augment()
   
-  augment_lm %>% ggplot(aes(x=day, y =.resid)) +geom_violin() + geom_smooth()+ labs(title = "Residuals vs year", x ="day", y = "residual")
+  augment_lm %>% ggplot(aes(x=day, y =.resid)) +geom_violin() + geom_smooth(method = lm)+ labs(title = "Residuals vs year", x ="day", y = "residual")
   
   get_resid_tidy %>% knitr :: kable()
 
   augment_lm %>% ggplot(aes(x =factor(.fitted), y =.resid)) +geom_violin() + geom_smooth()+ labs(title = "Residuals vs fitted", x =" fitted", y = "residual")
+  
+ 
 
+
+  
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
