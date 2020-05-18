@@ -1,12 +1,47 @@
 ---
 title: "taxitaxi"
+<<<<<<< HEAD
 author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi"
+=======
+author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi "
+>>>>>>> 96e3861783974224e57cc79263ca9c1b21101ded
 date: "5/17/2020"
 output: html_document
 ---
 
+
+hello how are you jajja
+
+Hypothesis testing(day vs tipping):
+
+Linear regression Model, We are trying to figure out the relationship between Day of the week and the Tip amount.For the linear regression model to actually be usable the mean should be very zero (or very close). In our case the mean is an extremely small value that it holds true.
+null hypothesis: there is no relationship between them. Alternative hypothesis, is there is a relationship between tip amount and day. If the value of the intercept <0.05  it rejects the null hypothesis. If the value of p is greater > 0.05 it does not reject the null hypothesis, meaning that there is no relationship. Even though the p-value is less than 0.05 and the mean of the residuals is close to 0. through the graph and collected data, I do not see a linear regression relationship between these two variables. So I dont feel comfortable to use the Linear regression model because some of the assumptions are not met. 
+
+Question 1:
+
+Is there a general trend (e.g., increasing or decreasing) for Is there a relationship between weekend/weekday and tipping habits? Is this trend linear? 
+
+
+
+Question 2: How would you describe the distribution of tibbing habits for each day? Is it skewed, or not? Unimodal or not? Symmetric around its center?
+
+Question 3: What would a violin plot of residuals from the linear model in Question 3 vs. year look like? (Again, don’t do the analysis yet, answer this intuitively)
+
+Question 4: According to the assumptions of the linear regression model, what should that violin plot look like?
+
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(gapminder)
+library(broom)
+library(ggplot2)
+library(tidyverse)
+library(stringr)
+library(leaflet)
+
+#try again
 ```
 
 ```{r cleaningdata}
@@ -15,6 +50,7 @@ library(ggplot2)
 library(dplyr)
 url <- "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2018-10.csv"
 taxi_tab <- read_csv(url)
+head(taxi_tab)
 ```
 
 ```{r sampling}
@@ -93,6 +129,52 @@ Below is a graph that visualizes the trend of taxi ride duration throughout the 
 
 
 
+#Tarek- Calendar Creation
+
+  #adds the specific day of the week for each entity into taxi_tab
+  split <- taxi_tab$tpep_dropoff_datetime
+  split<-as.data.frame(split)
+  split<- split%>%separate(split, c("date","time"), sep="\\s" )
+  split$day <- weekdays(as.Date(split$date))
+  taxi_tab$day <-split$day
+
+  #Scatter Plot Days of the Week vs Dist. Travelled
+  taxi_tab %>% ggplot(aes(x = day, y = trip_distance))+ geom_point() + labs(title = "Day of the Week Vs Distance Travelled")
+ 
+  
+  # box plot representing tip amounts compared to the day
+  taxi_tab %>% ggplot(aes(x = day, y = tip_amount))+ geom_boxplot() + geom_smooth(method = lm)+ labs(title = "Day of the Week Vs Tip amount")
+  
+  Further_testing <- taxi_tab%>% group_by(day) %>% summarize(avg_fare = mean(fare_amount), avg_tip = mean(tip_amount), sum_fare = sum(fare_amount), sum_tip = sum(tip_amount), Count = n() )
+  
+  
+  get_resid <- lm(tip_amount~day, data = taxi_tab)
+  #checking the mean of the residuals
+  mean(get_resid$residuals)
+  
+  
+  get_resid_tidy <- get_resid %>% tidy() 
+  
+  augment_lm <- get_resid %>%augment()
+  
+  augment_lm %>% ggplot(aes(x=day, y =.resid)) +geom_violin() + geom_smooth(method = lm)+ labs(title = "Residuals vs year", x ="day", y = "residual")
+  
+  get_resid_tidy %>% knitr :: kable()
+
+  augment_lm %>% ggplot(aes(x =factor(.fitted), y =.resid)) +geom_violin() + geom_smooth()+ labs(title = "Residuals vs fitted", x =" fitted", y = "residual")
+  
+ split2 <- taxi_tab$tpep_pickup_datetime
+ split2 <- taxi_tab$tpep_dropoff_datetime
+ split2<-as.data.frame(split2)
+ split2$pickup <- taxi_tab$tpep_pickup_datetime
+ split2 <- split2%>%separate(split2, c("date_drop","time_drop"), sep="\\s" )
+ split2 <- split2%>%separate(pickup, c("date_pickup","time_pickup"), sep="\\s" )
+ split2$drop_in_mins <- 60 * 24 * as.numeric(times(split2$time_drop))
+ split2$pickup_in_mins <- 60 * 24 * as.numeric(times(split2$time_pickup))
+split2$trip_duration <- split2$drop_in_mins - split2$pickup_in_mins
+ taxi_tab$trip_duration <- split2$trip_duration
+
+  
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
