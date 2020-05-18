@@ -6,7 +6,7 @@ output: html_document
 ---
 
 
-
+hello how are you
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 url <- "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2018-10.csv"
 taxi_tab <- read_csv(url)
+head(taxi_tab)
 ```
 
 ```{r sampling}
