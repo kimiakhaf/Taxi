@@ -7,6 +7,26 @@ output: html_document
 
 
 hello how are you jajja
+
+Hypothesis testing(day vs tipping):
+
+Question 1:
+
+Is there a general trend (e.g., increasing or decreasing) for Is there a relationship between weekend/weekday and tipping habits? Is this trend linear? 
+
+
+
+Question 2: How would you describe the distribution of tibbing habits for each day? Is it skewed, or not? Unimodal or not? Symmetric around its center?
+
+Question 3: What would a violin plot of residuals from the linear model in Question 3 vs. year look like? (Again, don’t do the analysis yet, answer this intuitively)
+
+Question 4: According to the assumptions of the linear regression model, what should that violin plot look like?
+
+Question 5:
+
+Linear regression Model, We are trying to figure out the relationship between Day of the week and the Tip amount.For the linear regression model to actually be usable the mean should be very zero (or very close). In our case the mean is an extremely small value that it holds true.
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(gapminder)
@@ -42,11 +62,30 @@ taxi_tab
   split$day <- weekdays(as.Date(split$date))
   taxi_tab$day <-split$day
 
-  #Violon Plot Days of the Week vs Dist. Travelled
-  taxi_tab %>% ggplot(aes(x = day, y = trip_distance))+ geom_violin() + labs(title = "Day of the Week Vs Distance Travelled")
+  #Scatter Plot Days of the Week vs Dist. Travelled
+  taxi_tab %>% ggplot(aes(x = day, y = trip_distance))+ geom_point() + labs(title = "Day of the Week Vs Distance Travelled")
+ 
   
-  # scatter plot representing tip amounts compared to the day
-  taxi_tab %>% ggplot(aes(x = day, y = tip_amount))+ geom_point() + geom_smooth(method = lm)+ labs(title = "Day of the Week Vs Tip amount")
+  # box plot representing tip amounts compared to the day
+  taxi_tab %>% ggplot(aes(x = day, y = tip_amount))+ geom_boxplot() + geom_smooth(method = lm)+ labs(title = "Day of the Week Vs Tip amount")
+  
+  Further_testing <- taxi_tab%>% group_by(day) %>% summarize(avg_fare = mean(fare_amount), avg_tip = mean(tip_amount), sum_fare = sum(fare_amount), sum_tip = sum(tip_amount), Count = n() )
+  
+  
+  get_resid <- lm(tip_amount~day, data = taxi_tab)
+  #checking the mean of the residuals
+  mean(get_resid$residuals)
+  
+  
+  get_resid_tidy <- get_resid %>% tidy() 
+  
+  augment_lm <- get_resid %>%augment()
+  
+  augment_lm %>% ggplot(aes(x=day, y =.resid)) +geom_violin() + geom_smooth()+ labs(title = "Residuals vs year", x ="day", y = "residual")
+  
+  get_resid_tidy %>% knitr :: kable()
+
+  augment_lm %>% ggplot(aes(x =factor(.fitted), y =.resid)) +geom_violin() + geom_smooth()+ labs(title = "Residuals vs fitted", x =" fitted", y = "residual")
 
 ```
 
