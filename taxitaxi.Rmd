@@ -9,6 +9,13 @@ output: html_document
 hello how are you jajja
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(gapminder)
+library(broom)
+library(ggplot2)
+library(tidyverse)
+library(stringr)
+library(leaflet)
+
 #try again
 ```
 
@@ -25,6 +32,21 @@ taxi_tab <- taxi_tab %>%
   sample_n(2000000) %>%
   select(VendorID, tpep_pickup_datetime, tpep_dropoff_datetime, passenger_count, trip_distance, fare_amount, tip_amount, tolls_amount, PULocationID, DOLocationID)
 taxi_tab
+
+#Tarek- Calendar Creation
+
+  #adds the specific day of the week for each entity into taxi_tab
+  split <- taxi_tab$tpep_dropoff_datetime
+  split<-as.data.frame(split)
+  split<- split%>%separate(split, c("date","time"), sep="\\s" )
+  split$day <- weekdays(as.Date(split$date))
+  taxi_tab$day <-split$day
+
+  #Violon Plot Days of the Week vs Dist. Travelled
+  taxi_tab %>% ggplot(aes(x = day, y = trip_distance))+ geom_violin() + labs(title = "Day of the Week Vs Distance Travelled")
+  
+  # scatter plot representing tip amounts compared to the day
+  taxi_tab %>% ggplot(aes(x = day, y = tip_amount))+ geom_point() + geom_smooth(method = lm)+ labs(title = "Day of the Week Vs Tip amount")
 
 ```
 
