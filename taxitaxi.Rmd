@@ -1,6 +1,6 @@
 ---
 title: "taxitaxi"
-author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, "
+author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi "
 date: "5/17/2020"
 output: html_document
 ---
@@ -88,8 +88,16 @@ taxi_tab
 
   augment_lm %>% ggplot(aes(x =factor(.fitted), y =.resid)) +geom_violin() + geom_smooth()+ labs(title = "Residuals vs fitted", x =" fitted", y = "residual")
   
- 
-
+ split2 <- taxi_tab$tpep_pickup_datetime
+ split2 <- taxi_tab$tpep_dropoff_datetime
+ split2<-as.data.frame(split2)
+ split2$pickup <- taxi_tab$tpep_pickup_datetime
+ split2 <- split2%>%separate(split2, c("date_drop","time_drop"), sep="\\s" )
+ split2 <- split2%>%separate(pickup, c("date_pickup","time_pickup"), sep="\\s" )
+ split2$drop_in_mins <- 60 * 24 * as.numeric(times(split2$time_drop))
+ split2$pickup_in_mins <- 60 * 24 * as.numeric(times(split2$time_pickup))
+split2$trip_duration <- split2$drop_in_mins - split2$pickup_in_mins
+ taxi_tab$trip_duration <- split2$trip_duration
 
   
 ```
