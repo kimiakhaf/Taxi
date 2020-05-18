@@ -1,6 +1,6 @@
 ---
 title: "taxitaxi"
-author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, "
+author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi"
 date: "5/17/2020"
 output: html_document
 ---
@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r cleaningdata}
 library(tidyverse)
+library(ggplot2)
+library(dplyr)
 url <- "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2018-10.csv"
 taxi_tab <- read_csv(url)
 ```
@@ -20,7 +22,76 @@ taxi_tab <- read_csv(url)
 taxi_tab <- taxi_tab %>%
   sample_n(2000000) %>%
   select(VendorID, tpep_pickup_datetime, tpep_dropoff_datetime, passenger_count, trip_distance, fare_amount, tip_amount, tolls_amount, PULocationID, DOLocationID)
-taxi_tab
+head(taxi_tab)
+
+```
+
+In order to know which areas the locationID attributes represent, we are referring to a table that has the names of areas with their ID. 
+
+``` {r zonetab}
+zoneurl <- "https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
+zone_tab <- read_csv(zoneurl)
+head(zone_tab)
+```
+
+```{r mergezonenames}
+  zone_df <- taxi_tab %>% full_join(zone_tab, by=c("PULocationID"="LocationID")) %>%
+  select(-Zone, -service_zone)
+zone_df
+
+```
+```{r graphzones}
+
+split <- zone_df$tpep_dropoff_datetime
+  split<-as.data.frame(split)
+  split<- split%>%separate(split, c("date","time"), sep="\\s" )
+  split$day <- weekdays(as.Date(split$date))
+  zone_df$day <-split$day 
+  
+zone_df
+```
+
+
+
+```{r getcount}
+newdf <- zone_df %>%
+  group_by(day,Borough) %>%
+  summarise(count=n()) %>%
+  filter(!is.na(day)) %>%
+  filter(!(Borough=="Unknown"))
+newdf
+```
+
+The number of rides in Manhatten is much higher than in the other buroughs. To be precise, out of our 2 million entry sample, 1.8 million belongs to this area and because of this significant difference, comparing counts of rides with other buroughs throughout the week causes our graph not to be that useful. We will basically see the trend in Manhattan clearly, but we will not be able to have any useful observation in regards to the other buroughs. Below we have singled out Manhattan rides. The graph is showing the number of rides that happen in this area (to be specific, picked up in this area) and how they change as the week goes by.
+
+```{r sth}
+man_df<- newdf %>%
+  filter(Borough=="Manhattan") %>%
+  group_by(day) %>% 
+  summarise(rides=sum(count))
+
+#Arranging weekdays so that they are in the correct order when visualizing our data
+
+man_df$day<- factor(man_df$day, levels=c("Monday",
+    "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday","Sunday"))
+man_df<-man_df[order(man_df$day),]
+
+man_df %>%
+  ggplot(aes(x=day, y=rides, fill=day))+geom_bar(stat = "identity")+ggtitle(label = "Weekday Ride Number Comparison")+theme_minimal()+theme(plot.title = element_text(hjust = 0.5, lineheight = 0.8, face = "bold"))+xlab("Days")+ylab("Number of Rides")
+man_df
+           
+```
+What can be observed is that the number of rides is the highest on Wednesdays and lowest on Sundays and Saturdays. 
+
+Another interesting observation is how the duration of rides might change throughout the week. Do newyorkers spend more time riding taxis on the weekend or do the majority use taxis to commute perhaps to and from work? 
+
+Below is a graph that visualizes the trend of taxi ride duration throughout the week. This time we are using the entire data we have and not just for one particular area. 
+
+```{r durationgraph}
+
+
+
+
 
 ```
 
