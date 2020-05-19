@@ -1,10 +1,5 @@
 ---
 title: "New York Yellow Cabs Data Analysis"
-knit: (function(input_file, encoding) {
-  out_dir <- 'docs';
-  rmarkdown::render(input_file,
- encoding=encoding,
- output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
 author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi"
 date: "5/16/2020"
 output: html_document
