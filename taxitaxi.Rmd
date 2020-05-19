@@ -8,29 +8,12 @@ author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi "
 date: "5/17/2020"
 output: html_document
 ---
+Introduction: 
 
+The dataset we have worked on belongs to the yellow taxi cabs that operate in New York. We chose October 2018 data to analyze and try to see if we can learn more about the commute new yorkers experience on a daily basis. 
 
-hello how are you jajja
-
-Hypothesis testing(day vs tipping):
-
-Linear regression Model, We are trying to figure out the relationship between Day of the week and the Tip amount.For the linear regression model to actually be usable the mean should be very zero (or very close). In our case the mean is an extremely small value that it holds true.
-null hypothesis: there is no relationship between them. Alternative hypothesis, is there is a relationship between tip amount and day. If the value of the intercept <0.05  it rejects the null hypothesis. If the value of p is greater > 0.05 it does not reject the null hypothesis, meaning that there is no relationship. Even though the p-value is less than 0.05 and the mean of the residuals is close to 0. through the graph and collected data, I do not see a linear regression relationship between these two variables. So I dont feel comfortable to use the Linear regression model because some of the assumptions are not met. 
-
-Question 1:
-
-Is there a general trend (e.g., increasing or decreasing) for Is there a relationship between weekend/weekday and tipping habits? Is this trend linear? 
-
-
-
-Question 2: How would you describe the distribution of tibbing habits for each day? Is it skewed, or not? Unimodal or not? Symmetric around its center?
-
-Question 3: What would a violin plot of residuals from the linear model in Question 3 vs. year look like? (Again, don’t do the analysis yet, answer this intuitively)
-
-Question 4: According to the assumptions of the linear regression model, what should that violin plot look like?
-
-
-
+We began by setting up and cleaning the data, only selecting our desired attributes.
+The mentioned dataset had 8 million entries so we took a random sample of 2 million entries to work with. 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -40,14 +23,10 @@ library(ggplot2)
 library(tidyverse)
 library(stringr)
 library(leaflet)
-
-#try again
+library(dplyr)
 ```
 
 ```{r cleaningdata}
-library(tidyverse)
-library(ggplot2)
-library(dplyr)
 url <- "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2018-10.csv"
 taxi_tab <- read_csv(url)
 head(taxi_tab)
@@ -62,7 +41,7 @@ head(taxi_tab)
 
 ```
 
-In order to know which areas the locationID attributes represent, we are referring to a table that has the names of areas with their ID. 
+The data set includes the drop off and pickup location. However, it has used location identification number to specify different zones in New York. We found a helpful table mentioning which borough of New York these IDs refer to. 
 
 ``` {r zonetab}
 zoneurl <- "https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
@@ -70,12 +49,16 @@ zone_tab <- read_csv(zoneurl)
 head(zone_tab)
 ```
 
+We now join our existing data set with this new table so that we can see to which burough of New York every ride entry belongs to. 
+
 ```{r mergezonenames}
   zone_df <- taxi_tab %>% full_join(zone_tab, by=c("PULocationID"="LocationID")) %>%
   select(-Zone, -service_zone)
 zone_df
 
 ```
+
+
 ```{r graphzones}
 
 split <- zone_df$tpep_dropoff_datetime
@@ -87,7 +70,7 @@ split <- zone_df$tpep_dropoff_datetime
 zone_df
 ```
 
-
+The chunk of code below gets the count of rides happening on days of the week, filtering out NA days and Unknown boroughs so that we have a more consistent and clean look at our data. 
 
 ```{r getcount}
 newdf <- zone_df %>%
@@ -121,15 +104,25 @@ What can be observed is that the number of rides is the highest on Wednesdays an
 
 Another interesting observation is how the duration of rides might change throughout the week. Do newyorkers spend more time riding taxis on the weekend or do the majority use taxis to commute perhaps to and from work? 
 
-Below is a graph that visualizes the trend of taxi ride duration throughout the week. This time we are using the entire data we have and not just for one particular area. 
 
-```{r durationgraph}
+#Hypothesis testing(day vs tipping):
 
+Linear regression Model, We are trying to figure out the relationship between Day of the week and the Tip amount.For the linear regression model to actually be usable the mean should be very zero (or very close). In our case the mean is an extremely small value that it holds true.
+null hypothesis: there is no relationship between them. Alternative hypothesis, is there is a relationship between tip amount and day. If the value of the intercept <0.05  it rejects the null hypothesis. If the value of p is greater > 0.05 it does not reject the null hypothesis, meaning that there is no relationship. Even though the p-value is less than 0.05 and the mean of the residuals is close to 0. through the graph and collected data, I do not see a linear regression relationship between these two variables. So I dont feel comfortable to use the Linear regression model because some of the assumptions are not met. 
 
+Question 1:
 
+Is there a general trend (e.g., increasing or decreasing) for Is there a relationship between weekend/weekday and tipping habits? Is this trend linear? 
 
+Question 2: How would you describe the distribution of tibbing habits for each day? Is it skewed, or not? Unimodal or not? Symmetric around its center?
 
-#Tarek- Calendar Creation
+Question 3: What would a violin plot of residuals from the linear model in Question 3 vs. year look like? (Again, don’t do the analysis yet, answer this intuitively)
+
+Question 4: According to the assumptions of the linear regression model, what should that violin plot look like?
+
+```{r hyptesting}
+
+# Calendar Creation
 
   #adds the specific day of the week for each entity into taxi_tab
   split <- taxi_tab$tpep_dropoff_datetime
@@ -152,7 +145,6 @@ Below is a graph that visualizes the trend of taxi ride duration throughout the 
   #checking the mean of the residuals
   mean(get_resid$residuals)
   
-  
   get_resid_tidy <- get_resid %>% tidy() 
   
   augment_lm <- get_resid %>%augment()
@@ -173,7 +165,6 @@ Below is a graph that visualizes the trend of taxi ride duration throughout the 
  split2$pickup_in_mins <- 60 * 24 * as.numeric(times(split2$time_pickup))
 split2$trip_duration <- split2$drop_in_mins - split2$pickup_in_mins
  taxi_tab$trip_duration <- split2$trip_duration
-
   
 ```
 
