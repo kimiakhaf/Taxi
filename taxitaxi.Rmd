@@ -1,11 +1,7 @@
 ---
-title: "taxitaxi"
-<<<<<<< HEAD
+title: "New York Yellow Cabs Data Analysis"
 author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi"
-=======
-author: "Kimia Khaffafzadeh Ahrabi, Amir Nejat, Tarek Halabi "
->>>>>>> 96e3861783974224e57cc79263ca9c1b21101ded
-date: "5/17/2020"
+date: "5/16/2020"
 output: html_document
 ---
 Introduction: 
@@ -54,7 +50,7 @@ We now join our existing data set with this new table so that we can see to whic
 ```{r mergezonenames}
   zone_df <- taxi_tab %>% full_join(zone_tab, by=c("PULocationID"="LocationID")) %>%
   select(-Zone, -service_zone)
-zone_df
+  head(zone_df)
 
 ```
 
@@ -66,7 +62,6 @@ split <- zone_df$tpep_dropoff_datetime
   split<- split%>%separate(split, c("date","time"), sep="\\s" )
   split$day <- weekdays(as.Date(split$date))
   zone_df$day <-split$day 
-  
 zone_df
 ```
 
@@ -78,7 +73,7 @@ newdf <- zone_df %>%
   summarise(count=n()) %>%
   filter(!is.na(day)) %>%
   filter(!(Borough=="Unknown"))
-newdf
+head(newdf)
 ```
 
 The number of rides in Manhatten is much higher than in the other buroughs. To be precise, out of our 2 million entry sample, 1.8 million belongs to this area and because of this significant difference, comparing counts of rides with other buroughs throughout the week causes our graph not to be that useful. We will basically see the trend in Manhattan clearly, but we will not be able to have any useful observation in regards to the other buroughs. Below we have singled out Manhattan rides. The graph is showing the number of rides that happen in this area (to be specific, picked up in this area) and how they change as the week goes by.
@@ -167,5 +162,144 @@ split2$trip_duration <- split2$drop_in_mins - split2$pickup_in_mins
  taxi_tab$trip_duration <- split2$trip_duration
   
 ```
+
+Taxi information for November of 2018. This is a secondry data set needed to the machine learning part of the project. 
+
+
+```{r gettingnovdata}
+url <- "https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2018-11.csv"
+taxi2 <- read_csv(url)
+head(taxi2)
+```
+Before we start the prediction task analysis, we need to combine the two datasets to make a comparison between the months of October and November. 
+
+```{r combine}
+taxi1 <- taxi %>%
+  sample_n(2000000) %>%
+    select(VendorID, tpep_pickup_datetime, tpep_dropoff_datetime, passenger_count, trip_distance, fare_amount, tip_amount, tolls_amount, PULocationID, DOLocationID) 
+taxi2 <- taxi2 %>%
+  sample_n(2000000) %>%
+    select(VendorID, tpep_pickup_datetime, tpep_dropoff_datetime, passenger_count, trip_distance, fare_amount, tip_amount, tolls_amount, PULocationID, DOLocationID) 
+
+total <- rbind(taxi1, taxi2)
+total
+
+```
+
+$\huge{The Prediction Task}$
+The prediction task that we are going to respond is:
+Can we predict if the tip amount will increase or decrease one month from now?
+
+We are going to use machine learning to answer this question and the method that we are going to use is a random forest with 50 tress.
+
+First, we will compare the tip-amount for October to November label it as up or down depending on the sign of the difference. The difference would be October - November. In order to do that, we will extract the date from date and time. Then, we extract day and year from date. Lastly, we create the direction varible based on the value of diff, so If the difference is negative, the direction would be up, otherwise the direction would be down. 
+
+
+
+```{r machinelearning}
+   total$my <- format(as.Date(total$tpep_pickup_datetime,format="%Y-%m-%d"), format = "%m") 
+   total$my <- as.numeric(total$my) 
+   total$yy <- format(as.Date(total$tpep_pickup_datetime,format="%Y-%m-%d"), format = "%Y") 
+   total$yy <- as.numeric(total$yy) 
+   
+   total <- mutate(total, dm = my + yy*1000) 
+   
+   
+   wp <- total %>%
+   drop_na() %>%
+   filter(dm  %in% c("2018010", "2018011")) %>%
+   select(PULocationID, dm, tip_amount) %>%
+   distinct(PULocationID, dm, .keep_all = TRUE) %>%
+   spread(dm, tip_amount)
+   names(wp)[names(wp) == "2018010"] <- "October"
+   names(wp)[names(wp) == "2018011"] <- "November"
+   
+   
+   wp <- mutate(wp, diff = November - October) 
+   wp <- mutate(wp, Direction = ifelse(diff>0, "up", "down"))
+   wp <- select(wp, PULocationID, Direction)
+   
+   wp
+```
+
+
+
+```{r}
+wide_df <- taxi_tab %>%
+  select(  PULocationID, tpep_pickup_datetime , tip_amount) %>%
+     distinct(PULocationID, tpep_pickup_datetime, .keep_all = TRUE) %>%
+  tidyr::spread(tpep_pickup_datetime, tip_amount)   %>%
+  select(1,5:35)
+wide_df[is.na(wide_df)] <- 0.00
+wide_df
+```
+
+
+```{r}
+matrix <- wide_df %>%
+  as.matrix()
+
+ab_df <- matrix%>%
+  magrittr::set_colnames(NULL) %>%
+  as_data_frame() %>%
+  mutate(PULocationID= wide_df$PULocationID)
+  
+final_df <- ab_df %>%
+  inner_join(wp %>% select(PULocationID, Direction), by="PULocationID") %>%
+  mutate(Direction=factor(Direction, levels=c("down", "up")))%>%
+  select(-PULocationID) %>%
+  na.omit()
+
+final_df
+```
+
+
+
+```{r}
+set.seed(1234)
+
+cv_partition <- createFolds(final_df$Direction,
+                            k=10, returnTrain = TRUE)
+
+fit_control <- trainControl( 
+  method = "cv",
+  number = 10,
+  index = cv_partition,
+  #indexOut = cv_partition,
+  summaryFunction=twoClassSummary,
+  classProbs=TRUE,
+  savePredictions=TRUE)
+
+
+fit <- train(Direction~.,
+                    data= final_df,
+                    method = "rf",
+                    ntree = 50,
+                    trControl = fit_control,
+                    metric="ROC")
+
+fit
+
+```
+
+
+```{r}
+curve_df <-
+   fit$pred %>%
+    filter(mtry == 17)
+
+curve_df %>%
+  ggplot(aes(m=up,
+             d=factor(obs, levels=c("down","up")))) +
+    geom_roc(n.cuts=0) +
+    coord_equal() +
+    style_roc()
+```
+
+
+
+
+
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
